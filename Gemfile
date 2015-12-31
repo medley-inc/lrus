@@ -8,6 +8,7 @@ gem 'rack'
 gem 'sinatra', require: 'sinatra/base'
 
 group :test do
+  gem 'rake'
   gem 'rack-test', require: 'rack/test'
   gem 'minitest'
   gem 'pry-byebug'
