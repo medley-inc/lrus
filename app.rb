@@ -1,11 +1,40 @@
 ENV['RACK_ENV'] ||= 'development'
 require 'bundler'
 Bundler.require 'default', ENV['RACK_ENV']
+require 'tilt/erb'
 MONGO = Mongo::Client.new(ENV.fetch('MONGOLAB_URI', 'mongodb://localhost:27017/lrus'), heartbeat_frequency: 60 * 60)
 
 class App < Sinatra::Base
-  get '/:name' do
-    MONGO[:apps].find(name: params[:name]).limit(1).first.to_h.to_json
+  use Rack::Auth::Basic do |username, password|
+    username == ENV['AUTH_USERNAME'] && password == ENV['AUTH_PASSWORD']
+  end if ENV.key? 'AUTH_USERNAME' and ENV.key? 'AUTH_PASSWORD'
+
+  enable :method_override
+
+  helpers do
+    def error_404
+      not_found '<h1>Not Found</h1>'
+    end
+
+    def app_and_server(name, no)
+      app = MONGO[:apps].find(name: name).limit(1).first
+      error_404 unless app
+
+      server = app[:servers].find { |server| server[:n] == no.to_i }
+      error_404 unless server
+
+      [app, server]
+    end
+
+    def lockable?(app)
+      app[:servers].reject { |e| e[:l] }.size > 1
+    end
+  end
+
+  get '/' do
+    apps = MONGO[:apps].find
+
+    erb :names, locals: { apps: apps }
   end
 
   post '/:name/:branch' do
@@ -21,7 +50,13 @@ class App < Sinatra::Base
     servers = app[:servers]
     servers.push(n: servers.size + 1, t: now, b: '') while servers.size < size
 
-    server = servers.find(-> { servers.min_by { |e| e[:t] } }) { |e| e[:b] == branch }
+    server = servers.find { |e| e[:b] == branch }
+    unless server
+      available_servers = servers.reject { |e| e[:l] }
+      error 406, '<h1>Locked</h1>' if available_servers.empty?
+      server = available_servers.min_by { |e| e[:t] }
+    end
+
     server[:b] = branch
     server[:t] = now + 1
 
@@ -32,5 +67,37 @@ class App < Sinatra::Base
     end
 
     tmpl % { name: name, n: server[:n], b: server[:b] }
+  end
+
+  post '/:name/:no/free' do
+    app, server = app_and_server params[:name], params[:no]
+
+    server[:b] = ''
+    server[:t] = Time.now
+    server.delete :l
+
+    MONGO[:apps].update_one({ _id: app[:_id] }, app)
+
+    redirect uri "/"
+  end
+
+  post '/:name/:no/lock' do
+    app, server = app_and_server params[:name], params[:no]
+
+    server[:l] = true
+
+    MONGO[:apps].update_one({ _id: app[:_id] }, app)
+
+    redirect uri "/"
+  end
+
+  delete '/:name/:no/lock' do
+    app, server = app_and_server params[:name], params[:no]
+
+    server.delete :l
+
+    MONGO[:apps].update_one({ _id: app[:_id] }, app)
+
+    redirect uri "/"
   end
 end
