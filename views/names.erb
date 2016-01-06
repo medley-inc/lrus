@@ -1,0 +1,35 @@
+<% apps.each do |app| %>
+  <div class="container">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h5 class="panel-title"><a href="<%= "/#{app[:name]}" %>"><%= app[:name] %></a></h5>
+      </div>
+      <table class="table table-bordered">
+        <tr>
+          <th>No</th>
+          <th>Branch name</th>
+          <th>Last used at</th>
+          <th></th>
+        </tr>
+        <% app[:servers].sort_by { |e| e[:n] }.each do |server| %>
+          <tr>
+            <td><%= server[:n] %></td>
+            <td><%= server[:b] %></td>
+            <td><%= server[:t] %></td>
+            <td>
+              <% prefix = "/#{app[:name]}/#{server[:n]}" %>
+              <% if server[:l] %>
+                <a class="btn btn-default btn-sm" data-disable-with="Wait..." href="<%= "#{prefix}/lock" %>" data-method="delete">Unlock</a>
+              <% elsif lockable? app %>
+                <a class="btn btn-default btn-sm" data-disable-with="Wait..." href="<%= "#{prefix}/lock" %>" data-method="post">Lock</a>
+              <% end %>
+              <% if server[:b].size > 0 %>
+                <a class="btn btn-default btn-sm" data-disable-with="Wait..." href="<%= "#{prefix}/free" %>" data-method="post">Free</a>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </table>
+    </div>
+  </div>
+<% end %>
