@@ -23,7 +23,7 @@
               <% elsif lockable? app %>
                 <a class="btn btn-default btn-sm" data-disable-with="Wait..." href="<%= "#{prefix}/lock" %>" data-method="post">Lock</a>
               <% end %>
-              <% if server[:b].size > 0 %>
+              <% if server[:b] && server[:b].size > 0 %>
                 <a class="btn btn-default btn-sm" data-disable-with="Wait..." href="<%= "#{prefix}/free" %>" data-method="post">Free</a>
               <% end %>
             </td>
