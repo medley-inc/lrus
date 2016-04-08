@@ -14,75 +14,80 @@ describe App do
     App
   end
 
-  describe 'POST /:name/:branch' do
+  describe 'POST /:name' do
     it 'string' do
-      post '/foo/bar'
+      post '/foo', branch: 'bar'
       assert last_response.body == 'foo1'
     end
 
     it 'same' do
-      post '/foo/bar'
-      post '/foo/bar'
+      post '/foo', branch: 'bar'
+      post '/foo', branch: 'bar'
       assert last_response.body == 'foo1'
     end
 
     it 'other' do
-      post '/foo/bar'
-      post '/foo/baz'
+      post '/foo', branch: 'bar'
+      post '/foo', branch: 'baz'
       assert last_response.body == 'foo2'
     end
 
     it 'same2' do
-      post '/foo/bar'
-      post '/foo/baz'
-      post '/foo/bar'
+      post '/foo', branch: 'bar'
+      post '/foo', branch: 'baz'
+      post '/foo', branch: 'bar'
       assert last_response.body == 'foo1'
     end
 
     it 'evict' do
-      post '/foo/foo' # => foo1
-      post '/foo/bar' # => foo2
-      post '/foo/baz' # => foo3
-      post '/foo/qux' # => foo1
+      post '/foo', branch: 'foo' # => foo1
+      post '/foo', branch: 'bar' # => foo2
+      post '/foo', branch: 'baz' # => foo3
+      post '/foo', branch: 'qux' # => foo1
       assert last_response.body == 'foo1'
-      post '/foo/foo' # => foo2
+      post '/foo', branch: 'foo' # => foo2
       assert last_response.body == 'foo2'
     end
 
     it 'template' do
-      post '/foo/bar', tmpl: ''
+      post '/foo', branch: 'bar', tmpl: ''
       assert last_response.body == ''
 
-      post '/foo/bar', tmpl: 'FOO'
+      post '/foo', branch: 'bar', tmpl: 'FOO'
       assert last_response.body == 'FOO'
 
-      post '/foo/bar', tmpl: '${name}-${n}-${b}'
+      post '/foo', branch: 'bar', tmpl: '${name}-${n}-${b}'
       assert last_response.body == 'foo-1-bar'
     end
 
     it 'lock app server' do
-      post '/foo/bar' # create new app
+      post '/foo', branch: 'bar' # create new app
       post '/foo/1/lock' # lock all server
       post '/foo/2/lock'
       post '/foo/3/lock'
 
-      post '/foo/bar'
+      post '/foo', branch: 'bar'
       assert last_response.status == 200
       assert last_response.body == 'foo1'
 
-      post '/foo/baz' # trying allocate new server
+      post '/foo', branch: 'baz' # trying allocate new server
       assert last_response.status == 406
       assert last_response.body == '<h1>Locked</h1>'
 
       delete '/foo/3/lock' # unlock server3
 
-      post '/foo/baz'
+      post '/foo', branch: 'baz'
       assert last_response.status == 200
       assert last_response.body == 'foo3'
 
-      post '/foo/qux'
+      post '/foo', branch: 'qux'
       assert last_response.status == 200
       assert last_response.body == 'foo3'
+    end
+
+    it 'allow /' do
+      post '/foo', branch: 'bar/baz/wow'
+      assert last_response.status == 200
     end
   end
 end
