@@ -37,7 +37,7 @@ class App < Sinatra::Base
     erb :names, locals: { apps: apps }
   end
 
-  post '/:name/:branch' do
+  post '/:name' do
     name   = params[:name]
     branch = params[:branch]
     tmpl   = (params[:tmpl] || (name + '${n}')).gsub('$', '%')
