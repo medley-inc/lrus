@@ -135,8 +135,8 @@ describe App do
         post '/foo', branch: 'bar' # create new app
         post '/foo/1/lock' # lock
         post '/webhook/unlock/hoge', post_data, response_header
-        assert last_response.status == 404
-        assert last_response.body == 'Not exist application: hoge'
+        assert last_response.status == 200
+        assert last_response.body == 'ok'
       end
 
       it 'not exist repo' do
@@ -159,8 +159,8 @@ describe App do
         post '/foo', branch: 'bar' # create new app
         post '/foo/1/lock' # lock
         post '/webhook/unlock/foo', post_data, response_header
-        assert last_response.status == 404
-        assert last_response.body == 'Not exist repository: fuga'
+        assert last_response.status == 200
+        assert last_response.body == 'ok'
       end
 
       it 'not accepted action' do
@@ -183,8 +183,8 @@ describe App do
         post '/foo', branch: 'bar' # create new app
         post '/foo/1/lock' # lock
         post '/webhook/unlock/foo', post_data, response_header
-        assert last_response.status == 400
-        assert last_response.body == 'Not accepted action: opened'
+        assert last_response.status == 200
+        assert last_response.body == 'ok'
       end
 
       it 'not accepted event' do
@@ -207,8 +207,8 @@ describe App do
         post '/foo', branch: 'bar' # create new app
         post '/foo/1/lock' # lock
         post '/webhook/unlock/foo', post_data, response_header
-        assert last_response.status == 400
-        assert last_response.body == 'Not accepted event: pull_request_review'
+        assert last_response.status == 200
+        assert last_response.body == 'ok'
       end
     end
   end
