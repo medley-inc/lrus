@@ -89,5 +89,127 @@ describe App do
       post '/foo', branch: 'bar/baz/wow'
       assert last_response.status == 200
     end
+
+    describe 'github webhook' do
+      it 'work' do
+        post_data = {
+          payload: {
+            action: 'closed',
+            pull_request: {
+              base: {
+                repo: {
+                  name: 'bar'
+                }
+              }
+            }
+          }
+        }
+        response_header = {
+          'X-GitHub-Event' => 'pull_request'
+        }
+
+        post '/foo', branch: 'bar' # create new app
+        post '/foo/1/lock' # lock
+        post '/webhook/unlock/foo', post_data, response_header
+        assert last_response.status == 200
+        assert last_response.body == 'ok'
+      end
+
+      it 'not exist app' do
+        post_data = {
+          payload: {
+            action: 'closed',
+            pull_request: {
+              base: {
+                repo: {
+                  name: 'bar'
+                }
+              }
+            }
+          }
+        }
+        response_header = {
+          'X-GitHub-Event' => 'pull_request'
+        }
+
+        post '/foo', branch: 'bar' # create new app
+        post '/foo/1/lock' # lock
+        post '/webhook/unlock/hoge', post_data, response_header
+        assert last_response.status == 404
+        assert last_response.body == 'Not exist application: hoge'
+      end
+
+      it 'not exist repo' do
+        post_data = {
+          payload: {
+            action: 'closed',
+            pull_request: {
+              base: {
+                repo: {
+                  name: 'fuga'
+                }
+              }
+            }
+          }
+        }
+        response_header = {
+          'X-GitHub-Event' => 'pull_request'
+        }
+
+        post '/foo', branch: 'bar' # create new app
+        post '/foo/1/lock' # lock
+        post '/webhook/unlock/foo', post_data, response_header
+        assert last_response.status == 404
+        assert last_response.body == 'Not exist repository: fuga'
+      end
+
+      it 'not accepted action' do
+        post_data = {
+          payload: {
+            action: 'opened',
+            pull_request: {
+              base: {
+                repo: {
+                  name: 'bar'
+                }
+              }
+            }
+          }
+        }
+        response_header = {
+          'X-GitHub-Event' => 'pull_request'
+        }
+
+        post '/foo', branch: 'bar' # create new app
+        post '/foo/1/lock' # lock
+        post '/webhook/unlock/foo', post_data, response_header
+        assert last_response.status == 400
+        assert last_response.body == 'Not accepted action: opened'
+      end
+
+      it 'not accepted event' do
+        post_data = {
+          payload: {
+            action: 'closed',
+            pull_request: {
+              base: {
+                repo: {
+                  name: 'bar'
+                }
+              }
+            }
+          }
+        }
+        response_header = {
+          'X-GitHub-Event' => 'pull_request_review'
+        }
+
+        post '/foo', branch: 'bar' # create new app
+        post '/foo/1/lock' # lock
+        post '/webhook/unlock/foo', post_data, response_header
+        assert last_response.status == 400
+        assert last_response.body == 'Not accepted event: pull_request_review'
+      end
+    end
   end
 end
