@@ -96,10 +96,8 @@ describe App do
           payload: {
             action: 'closed',
             pull_request: {
-              base: {
-                repo: {
-                  name: 'bar'
-                }
+              head: {
+                ref: 'bar'
               }
             }
           }
@@ -120,10 +118,8 @@ describe App do
           payload: {
             action: 'closed',
             pull_request: {
-              base: {
-                repo: {
-                  name: 'bar'
-                }
+              head: {
+                ref: 'bar'
               }
             }
           }
@@ -136,7 +132,7 @@ describe App do
         post '/foo/1/lock' # lock
         post '/webhook/unlock/hoge', post_data, response_header
         assert last_response.status == 200
-        assert last_response.body == 'ok'
+        assert last_response.body == 'Not exist application: hoge'
       end
 
       it 'not exist repo' do
@@ -144,10 +140,8 @@ describe App do
           payload: {
             action: 'closed',
             pull_request: {
-              base: {
-                repo: {
-                  name: 'fuga'
-                }
+              head: {
+                ref: 'fuga'
               }
             }
           }
@@ -160,7 +154,7 @@ describe App do
         post '/foo/1/lock' # lock
         post '/webhook/unlock/foo', post_data, response_header
         assert last_response.status == 200
-        assert last_response.body == 'ok'
+        assert last_response.body == 'Not exist repository: fuga'
       end
 
       it 'not accepted action' do
@@ -168,10 +162,8 @@ describe App do
           payload: {
             action: 'opened',
             pull_request: {
-              base: {
-                repo: {
-                  name: 'bar'
-                }
+              head: {
+                ref: 'bar'
               }
             }
           }
@@ -184,7 +176,7 @@ describe App do
         post '/foo/1/lock' # lock
         post '/webhook/unlock/foo', post_data, response_header
         assert last_response.status == 200
-        assert last_response.body == 'ok'
+        assert last_response.body == 'Not accepted action: opened'
       end
 
       it 'not accepted event' do
@@ -208,7 +200,7 @@ describe App do
         post '/foo/1/lock' # lock
         post '/webhook/unlock/foo', post_data, response_header
         assert last_response.status == 200
-        assert last_response.body == 'ok'
+        assert last_response.body == 'Not accepted event: pull_request_review'
       end
     end
   end

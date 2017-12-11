@@ -104,19 +104,19 @@ class App < Sinatra::Base
   # github webhook
   post '/webhook/unlock/:name' do
     github_event = request.env['X-GitHub-Event']
-    return "ok" unless github_event == 'pull_request'
+    return "Not accepted event: #{github_event}" unless github_event == 'pull_request'
 
     payload = params[:payload]
     action = payload['action']
-    return "ok" unless action == 'closed'
+    return "Not accepted action: #{action}" unless action == 'closed'
 
     name = params[:name]
     app = MONGO[:apps].find(name: name).limit(1).first
-    return "ok" unless app
+    return "Not exist application: #{name}" unless app
 
-    repo_name = payload.dig('pull_request', 'base', 'repo', 'name')
+    repo_name = payload.dig('pull_request', 'head', 'ref')
     server = app[:servers].find { |server| server[:b] == repo_name }
-    return "ok" unless server
+    return "Not exist repository: #{repo_name}" unless server
 
     server.delete :l
 
