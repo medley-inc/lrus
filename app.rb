@@ -103,10 +103,13 @@ class App < Sinatra::Base
 
   # github webhook
   post '/webhook/unlock/:name' do
-    github_event = request.env['X-GitHub-Event']
+    github_event = request.env['HTTP_X_GITHUB_EVENT']
     return "Not accepted event: #{github_event}" unless github_event == 'pull_request'
 
-    payload = params[:payload]
+    body = request.body.read
+    return "No body" if body == ''
+
+    payload = JSON.parse(body)
     action = payload['action']
     return "Not accepted action: #{action}" unless action == 'closed'
 

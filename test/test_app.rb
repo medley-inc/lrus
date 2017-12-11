@@ -93,17 +93,15 @@ describe App do
     describe 'github webhook' do
       it 'work' do
         post_data = {
-          payload: {
-            action: 'closed',
-            pull_request: {
-              head: {
-                ref: 'bar'
-              }
+          action: 'closed',
+          pull_request: {
+            head: {
+              ref: 'bar'
             }
           }
-        }
+        }.to_json
         response_header = {
-          'X-GitHub-Event' => 'pull_request'
+          'HTTP_X_GITHUB_EVENT' => 'pull_request'
         }
 
         post '/foo', branch: 'bar' # create new app
@@ -115,17 +113,15 @@ describe App do
 
       it 'not exist app' do
         post_data = {
-          payload: {
-            action: 'closed',
-            pull_request: {
-              head: {
-                ref: 'bar'
-              }
+          action: 'closed',
+          pull_request: {
+            head: {
+              ref: 'bar'
             }
           }
-        }
+        }.to_json
         response_header = {
-          'X-GitHub-Event' => 'pull_request'
+          'HTTP_X_GITHUB_EVENT' => 'pull_request'
         }
 
         post '/foo', branch: 'bar' # create new app
@@ -137,17 +133,15 @@ describe App do
 
       it 'not exist repo' do
         post_data = {
-          payload: {
-            action: 'closed',
-            pull_request: {
-              head: {
-                ref: 'fuga'
-              }
+          action: 'closed',
+          pull_request: {
+            head: {
+              ref: 'fuga'
             }
           }
-        }
+        }.to_json
         response_header = {
-          'X-GitHub-Event' => 'pull_request'
+          'HTTP_X_GITHUB_EVENT' => 'pull_request'
         }
 
         post '/foo', branch: 'bar' # create new app
@@ -159,17 +153,15 @@ describe App do
 
       it 'not accepted action' do
         post_data = {
-          payload: {
-            action: 'opened',
-            pull_request: {
-              head: {
-                ref: 'bar'
-              }
+          action: 'opened',
+          pull_request: {
+            head: {
+              ref: 'bar'
             }
           }
-        }
+        }.to_json
         response_header = {
-          'X-GitHub-Event' => 'pull_request'
+          'HTTP_X_GITHUB_EVENT' => 'pull_request'
         }
 
         post '/foo', branch: 'bar' # create new app
@@ -181,19 +173,17 @@ describe App do
 
       it 'not accepted event' do
         post_data = {
-          payload: {
-            action: 'closed',
-            pull_request: {
-              base: {
-                repo: {
-                  name: 'bar'
-                }
+          action: 'closed',
+          pull_request: {
+            base: {
+              repo: {
+                name: 'bar'
               }
             }
           }
-        }
+        }.to_json
         response_header = {
-          'X-GitHub-Event' => 'pull_request_review'
+          'HTTP_X_GITHUB_EVENT' => 'pull_request_review'
         }
 
         post '/foo', branch: 'bar' # create new app
