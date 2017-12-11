@@ -114,7 +114,7 @@ class App < Sinatra::Base
     app = MONGO[:apps].find(name: name).limit(1).first
     return "Not exist application: #{name}" unless app
 
-    repo_name = payload.dig('pull_request', 'base', 'repo', 'name')
+    repo_name = payload.dig('pull_request', 'head', 'ref')
     server = app[:servers].find { |server| server[:b] == repo_name }
     return "Not exist repository: #{repo_name}" unless server
 
