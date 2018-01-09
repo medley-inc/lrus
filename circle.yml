@@ -1,3 +1,7 @@
+test:
+  override:
+    - bundle exec rake test
+
 deployment:
   master:
     branch: master
