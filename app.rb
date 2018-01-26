@@ -20,7 +20,7 @@ class App < Sinatra::Base
       app = MONGO[:apps].find(name: name).limit(1).first
       error_404 unless app
 
-      server = app[:servers].find { |server| server[:n] == no.to_i }
+      server = app[:servers].find { |e| e[:n] == no.to_i }
       error_404 unless server
 
       [app, server]
@@ -118,7 +118,7 @@ class App < Sinatra::Base
     return "Not exist application: #{name}" unless app
 
     repo_name = payload.dig('pull_request', 'head', 'ref')
-    server = app[:servers].find { |server| server[:b] == repo_name }
+    server = app[:servers].find { |e| e[:b] == repo_name }
     return "Not exist repository: #{repo_name}" unless server
 
     server.delete :l
