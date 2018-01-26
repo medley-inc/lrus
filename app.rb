@@ -42,6 +42,8 @@ class App < Sinatra::Base
     branch = params[:branch]
     tmpl   = (params[:tmpl] || (name + '${n}')).gsub('$', '%')
     size   = (params[:size] || 3).to_i
+    size   = 1 if size < 1
+    number = params[:number]
     now    = Time.now
 
     app = MONGO[:apps].find(name: name).limit(1).first
@@ -49,8 +51,15 @@ class App < Sinatra::Base
 
     servers = app[:servers]
     servers.push(n: servers.size + 1, t: now, b: '') while servers.size < size
+    servers.pop while servers.size > size
 
-    server = servers.find { |e| e[:b] == branch }
+    server = if number
+               n = Integer(number)
+               servers.find { |e| e[:n] == n }
+             else
+               servers.find { |e| e[:b] == branch }
+             end
+
     unless server
       available_servers = servers.reject { |e| e[:l] }
       error 406, '<h1>Locked</h1>' if available_servers.empty?

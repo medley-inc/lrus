@@ -90,6 +90,32 @@ describe App do
       assert last_response.status == 200
     end
 
+    it 'explicit number' do
+      post '/foo', branch: 'bar'
+      assert last_response.status == 200
+      assert last_response.body == 'foo1'
+      post '/foo', branch: 'bar', number: 2
+      assert last_response.status == 200
+      assert last_response.body == 'foo2'
+    end
+
+    it 'increase' do
+      post '/foo', branch: 'foo', size: 3 # => foo1
+      post '/foo', branch: 'bar', size: 3 # => foo2
+      post '/foo', branch: 'baz', size: 3 # => foo3
+      post '/foo', branch: 'qux', size: 4 # => foo4
+      assert last_response.body == 'foo4'
+    end
+
+    it 'shrink' do
+      post '/foo', branch: 'foo', size: 3 # => foo1
+      post '/foo', branch: 'bar', size: 3 # => foo2
+      post '/foo', branch: 'baz', size: 3 # => foo3
+      assert last_response.body == 'foo3'
+      post '/foo', branch: 'baz', size: 2 # => foo1
+      assert last_response.body == 'foo1'
+    end
+
     describe 'github webhook' do
       it 'work' do
         post_data = {
