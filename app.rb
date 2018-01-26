@@ -2,7 +2,7 @@ ENV['RACK_ENV'] ||= 'development'
 require 'bundler'
 Bundler.require 'default', ENV['RACK_ENV']
 require 'tilt/erb'
-MONGO = Mongo::Client.new(ENV.fetch('MONGOLAB_URI', 'mongodb://localhost:27017/lrus'), heartbeat_frequency: 60 * 60)
+MONGO = Mongo::Client.new(ENV.fetch('MONGOLAB_URI', 'mongodb://127.0.0.1:27017/lrus'), heartbeat_frequency: 60 * 60)
 
 class App < Sinatra::Base
   use Rack::Auth::Basic do |username, password|
