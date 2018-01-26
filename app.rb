@@ -2,7 +2,7 @@ ENV['RACK_ENV'] ||= 'development'
 require 'bundler'
 Bundler.require 'default', ENV['RACK_ENV']
 require 'tilt/erb'
-MONGO = Mongo::Client.new(ENV.fetch('MONGOLAB_URI', 'mongodb://localhost:27017/lrus'), heartbeat_frequency: 60 * 60)
+MONGO = Mongo::Client.new(ENV.fetch('MONGOLAB_URI', 'mongodb://127.0.0.1:27017/lrus'), heartbeat_frequency: 60 * 60)
 
 class App < Sinatra::Base
   use Rack::Auth::Basic do |username, password|
@@ -20,7 +20,7 @@ class App < Sinatra::Base
       app = MONGO[:apps].find(name: name).limit(1).first
       error_404 unless app
 
-      server = app[:servers].find { |server| server[:n] == no.to_i }
+      server = app[:servers].find { |e| e[:n] == no.to_i }
       error_404 unless server
 
       [app, server]
@@ -42,6 +42,8 @@ class App < Sinatra::Base
     branch = params[:branch]
     tmpl   = (params[:tmpl] || (name + '${n}')).gsub('$', '%')
     size   = (params[:size] || 3).to_i
+    size   = 1 if size < 1
+    number = params[:number]
     now    = Time.now
 
     app = MONGO[:apps].find(name: name).limit(1).first
@@ -49,8 +51,15 @@ class App < Sinatra::Base
 
     servers = app[:servers]
     servers.push(n: servers.size + 1, t: now, b: '') while servers.size < size
+    servers.pop while servers.size > size
 
-    server = servers.find { |e| e[:b] == branch }
+    server = if number
+               n = Integer(number)
+               servers.find { |e| e[:n] == n }
+             else
+               servers.find { |e| e[:b] == branch }
+             end
+
     unless server
       available_servers = servers.reject { |e| e[:l] }
       error 406, '<h1>Locked</h1>' if available_servers.empty?
@@ -118,7 +127,7 @@ class App < Sinatra::Base
     return "Not exist application: #{name}" unless app
 
     repo_name = payload.dig('pull_request', 'head', 'ref')
-    server = app[:servers].find { |server| server[:b] == repo_name }
+    server = app[:servers].find { |e| e[:b] == repo_name }
     return "Not exist repository: #{repo_name}" unless server
 
     server.delete :l
