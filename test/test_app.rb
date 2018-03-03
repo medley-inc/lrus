@@ -116,6 +116,15 @@ describe App do
       assert last_response.body == 'foo1'
     end
 
+    it 'empty' do
+      post '/foo', branch: 'foo' # => foo1
+      post '/foo', branch: 'bar' # => foo2
+      post '/foo', branch: 'baz' # => foo3
+      post '/foo/2/free'
+      post '/foo', branch: 'qux' # => foo2
+      assert last_response.body == 'foo2'
+    end
+
     describe 'github webhook' do
       it 'work' do
         post_data = {

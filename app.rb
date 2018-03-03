@@ -63,7 +63,7 @@ class App < Sinatra::Base
     unless server
       available_servers = servers.reject { |e| e[:l] }
       error 406, '<h1>Locked</h1>' if available_servers.empty?
-      server = available_servers.min_by { |e| e[:t] }
+      server = available_servers.find { |e| e[:b].empty? } || available_servers.min_by { |e| e[:t] }
     end
 
     server[:b] = branch
