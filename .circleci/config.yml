@@ -1,0 +1,26 @@
+version: 2.1
+orbs:
+  ruby: circleci/ruby@0.1.2
+  heroku: circleci/heroku@0.0.8
+jobs:
+  test:
+    executor:
+      name: ruby/default
+      tag: 2.6.3
+    steps:
+      - checkout
+      - ruby/load-cache
+      - ruby/bundle-install
+      - ruby/save-cache
+      - ruby/test
+workflows:
+  version: 2
+  default:
+    jobs:
+      - test
+      - heroku/deploy-via-git:
+          requires:
+            - test
+          filters:
+            branches:
+              only: master
