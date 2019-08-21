@@ -1,0 +1,27 @@
+version: 2.1
+orbs:
+  ruby: circleci/ruby@0.1.2
+  heroku: circleci/heroku@0.0.8
+jobs:
+  test:
+    docker:
+      - image: circleci/ruby:2.6.3
+      - image: circleci/mongo:3.4.16
+    steps:
+      - checkout
+      - ruby/load-cache
+      - ruby/bundle-install
+      - ruby/save-cache
+      - run: |
+          bundle exec rake test
+workflows:
+  version: 2
+  default:
+    jobs:
+      - test
+      - heroku/deploy-via-git:
+          requires:
+            - test
+          filters:
+            branches:
+              only: master
