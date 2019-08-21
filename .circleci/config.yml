@@ -12,7 +12,8 @@ jobs:
       - ruby/load-cache
       - ruby/bundle-install
       - ruby/save-cache
-      - ruby/test
+      - run: |
+          bundle exec rake test
 workflows:
   version: 2
   default:
