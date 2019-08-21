@@ -6,7 +6,7 @@ jobs:
   test:
     docker:
       - image: circleci/ruby:2.6.3
-      - image: circleci/mongo:3.4.16
+      - image: circleci/mongo:3.6.12
     steps:
       - checkout
       - ruby/load-cache
