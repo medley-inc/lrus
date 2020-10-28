@@ -1,12 +1,8 @@
-ENV['RACK_ENV'] ||= 'development'
-require 'bundler'
-Bundler.require 'default', ENV['RACK_ENV']
-require 'tilt/erb'
-MONGO = Mongo::Client.new(
-  ENV.fetch('MONGOLAB_URI', 'mongodb://127.0.0.1:27017/lrus'),
-  heartbeat_frequency: 60 * 60,
-  retry_writes: false
-)
+require 'bundler/setup'
+Bundler.require 'default'
+require 'sinatra/base'
+require 'pg'
+require_relative 'apps'
 
 class App < Sinatra::Base
   use Rack::Auth::Basic do |username, password|
@@ -15,19 +11,22 @@ class App < Sinatra::Base
 
   enable :method_override
 
+  set(:database_url) { ENV["DATABASE_URL"] }
+  set(:database_connection_pool) do
+    @pool ||= ConnectionPool.new { PG::Connection.new(settings.database_url) }
+  end
+
   helpers do
     def error_404
       not_found '<h1>Not Found</h1>'
     end
 
-    def app_and_server(name, no)
-      app = MONGO[:apps].find(name: name).limit(1).first
-      error_404 unless app
+    def error_406
+      error 406, '<h1>Locked</h1>'
+    end
 
-      server = app[:servers].find { |e| e[:n] == no.to_i }
-      error_404 unless server
-
-      [app, server]
+    def error_500
+      error 500, '<h1>Oops</h1>'
     end
 
     def lockable?(app)
@@ -35,83 +34,60 @@ class App < Sinatra::Base
     end
   end
 
-  get '/' do
-    apps = MONGO[:apps].find
+  error(Apps::Error) { error_500 }
+  error(Apps::LockedError) { error_406 }
+  error(Apps::NotFoundError) { error_404 }
 
-    erb :names, locals: { apps: apps }
+  get '/' do
+    list = settings.database_connection_pool.with do |connection|
+      apps = Apps.new(connection: connection)
+      apps.list
+    end
+
+    erb :names, locals: { apps: list }
   end
 
   post '/:name' do
-    name   = params[:name]
-    branch = params[:branch]
-    tmpl   = (params[:tmpl] || (name + '${n}')).gsub('$', '%')
-    size   = (params[:size] || 3).to_i
-    size   = 1 if size < 1
-    number = params[:number]
-    now    = Time.now
-
-    app = MONGO[:apps].find(name: name).limit(1).first
-    app ||= { name: name, servers: [] }
-
-    servers = app[:servers]
-    servers.push(n: servers.size + 1, t: now, b: '') while servers.size < size
-    servers.pop while servers.size > size
-
-    server = if number
-               n = Integer(number)
-               servers.find { |e| e[:n] == n }
-             else
-               servers.find { |e| e[:b] == branch }
-             end
-
-    unless server
-      available_servers = servers.reject { |e| e[:l] }
-      error 406, '<h1>Locked</h1>' if available_servers.empty?
-      server = available_servers.find { |e| e[:b].empty? } || available_servers.min_by { |e| e[:t] }
-    end
-
-    server[:b] = branch
-    server[:t] = now + 1
-
-    if app[:_id]
-      MONGO[:apps].update_one({ _id: app[:_id] }, app)
-    else
-      MONGO[:apps].insert_one(app)
+    name = params[:name]
+    tmpl = (params[:tmpl] || (name + '${n}')).gsub('$', '%')
+    server = settings.database_connection_pool.with do |connection|
+      apps = Apps.new(connection: connection)
+      apps.alloc(
+        name: name,
+        branch: params[:branch],
+        size: (params[:size] || 3).to_i,
+        number: params[:number]
+      )
     end
 
     tmpl % { name: name, n: server[:n], b: server[:b] }
   end
 
   post '/:name/:no/free' do
-    app, server = app_and_server params[:name], params[:no]
+    settings.database_connection_pool.with do |connection|
+      apps = Apps.new(connection: connection)
+      apps.free(name: params[:name], number: params[:no])
+    end
 
-    server[:b] = ''
-    server[:t] = Time.now
-    server.delete :l
-
-    MONGO[:apps].update_one({ _id: app[:_id] }, app)
-
-    redirect uri "/"
+    redirect uri '/'
   end
 
   post '/:name/:no/lock' do
-    app, server = app_and_server params[:name], params[:no]
+    settings.database_connection_pool.with do |connection|
+      apps = Apps.new(connection: connection)
+      apps.lock(name: params[:name], number: params[:no])
+    end
 
-    server[:l] = true
-
-    MONGO[:apps].update_one({ _id: app[:_id] }, app)
-
-    redirect uri "/"
+    redirect uri '/'
   end
 
   delete '/:name/:no/lock' do
-    app, server = app_and_server params[:name], params[:no]
+    settings.database_connection_pool.with do |connection|
+      apps = Apps.new(connection: connection)
+      apps.unlock(name: params[:name], number: params[:no])
+    end
 
-    server.delete :l
-
-    MONGO[:apps].update_one({ _id: app[:_id] }, app)
-
-    redirect uri "/"
+    redirect uri '/'
   end
 
   # github webhook
@@ -127,17 +103,18 @@ class App < Sinatra::Base
     return "Not accepted action: #{action}" unless action == 'closed'
 
     name = params[:name]
-    app = MONGO[:apps].find(name: name).limit(1).first
-    return "Not exist application: #{name}" unless app
+    branch = payload.dig('pull_request', 'head', 'ref')
 
-    repo_name = payload.dig('pull_request', 'head', 'ref')
-    server = app[:servers].find { |e| e[:b] == repo_name }
-    return "Not exist repository: #{repo_name}" unless server
-
-    server.delete :l
-
-    MONGO[:apps].update_one({ _id: app[:_id] }, app)
-
-    'ok'
+    begin
+      settings.database_connection_pool.with do |connection|
+        apps = Apps.new(connection: connection)
+        apps.unlock(name: name, branch: branch)
+      end
+      'ok'
+    rescue Apps::AppNotFoundError
+      "Not exist application: #{name}"
+    rescue Apps::ServerNotFoundError
+      "Not exist repository: #{branch}"
+    end
   end
 end
