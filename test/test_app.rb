@@ -244,4 +244,33 @@ describe App do
       end
     end
   end
+
+  describe 'GET /:name/:branch' do
+    before do
+      post '/foo', branch: 'bar'
+      post '/foo/1/lock'
+      post '/foo', branch: 'baz'
+    end
+
+    it 'works' do
+      get '/foo/bar'
+      assert last_response.status == 200
+      assert last_response.content_type == 'application/json'
+      response_json = JSON.parse last_response.body
+      assert response_json['b'] == 'bar'
+      assert response_json['l'] == true
+
+      get '/foo/baz'
+      assert last_response.status == 200
+      assert last_response.content_type == 'application/json'
+      response_json = JSON.parse last_response.body
+      assert response_json['b'] == 'baz'
+      assert response_json['l'] == false
+
+      get '/foo/qux'
+      assert last_response.status == 404
+      get '/qux/foo'
+      assert last_response.status == 404
+    end
+  end
 end

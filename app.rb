@@ -72,6 +72,20 @@ class App < Sinatra::Base
     redirect uri '/'
   end
 
+  get '/:name/:branch' do
+    list = settings.database_connection_pool.with do |connection|
+      apps = Apps.new(connection: connection)
+      apps.list
+    end
+    app = list.find { _1[:name] == params[:name] }
+    error_404 unless app
+    server = app[:servers].find { _1.b == params[:branch] }
+    error_404 unless server
+
+    content_type 'application/json'
+    server.as_json.to_json
+  end
+
   post '/:name/:no/lock' do
     settings.database_connection_pool.with do |connection|
       apps = Apps.new(connection: connection)
