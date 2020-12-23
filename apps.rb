@@ -27,7 +27,7 @@ class Apps
   #   * :servers (Array<Server>)
   def list
     result = connection.exec_params(<<~SQL)
-      SELECT name, servers FROM apps
+      SELECT name, servers FROM apps ORDER BY name
     SQL
     return [] if result.ntuples.zero?
 
