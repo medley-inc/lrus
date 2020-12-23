@@ -12,7 +12,7 @@
           <th></th>
         </tr>
         <% app[:servers].sort_by { |e| e[:n] }.each do |server| %>
-          <tr>
+          <tr <% if server[:l] %>class="info"<% end %>>
             <td><%= server[:n] %></td>
             <td><%= server[:b] %></td>
             <td><%= server[:t] %></td>
