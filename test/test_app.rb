@@ -85,6 +85,27 @@ describe App do
       assert last_response.body == 'foo3'
     end
 
+    it "locking" do
+      post '/foo', branch: 'teeeest' # create new app
+
+      post "/foo/1/locking"
+      assert last_response.status == 200
+      assert last_response.body == 'false'
+
+      post '/foo/1/lock'
+      post '/foo/1/locking'
+      assert last_response.status == 200
+      assert last_response.body == 'true'
+
+      delete '/foo/1/lock'
+      post '/foo/1/locking'
+      assert last_response.status == 200
+      assert last_response.body == 'false'
+
+      post '/foo/5/locking'
+      assert last_response.status == 404
+    end
+
     it 'allow /' do
       post '/foo', branch: 'bar/baz/wow'
       assert last_response.status == 200

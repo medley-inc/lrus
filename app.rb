@@ -114,6 +114,13 @@ class App < Sinatra::Base
     redirect uri "/"
   end
 
+  post '/:name/:no/locking' do
+    _, server = app_and_server params[:name], params[:no]
+
+    "#{server[:l] == true}"
+  end
+
+
   # github webhook
   post '/webhook/unlock/:name' do
     github_event = request.env['HTTP_X_GITHUB_EVENT']
