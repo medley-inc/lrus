@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS apps (
+  name TEXT NOT NULL,
+  servers JSONB NOT NULL,
+  PRIMARY KEY (name)
+);

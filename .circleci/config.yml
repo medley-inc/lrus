@@ -5,15 +5,33 @@ orbs:
 jobs:
   test:
     docker:
-      - image: circleci/ruby:2.6.3
-      - image: circleci/mongo:3.6.12
+      - image: circleci/ruby:2.7.2
+      - image: circleci/postgres:11
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: lrus_test
     steps:
       - checkout
       - ruby/load-cache
       - ruby/bundle-install
       - ruby/save-cache
-      - run: |
-          bundle exec rake test
+      - run:
+          name: Waiting for Postgres to be ready
+          command: |
+            for i in `seq 1 10`;
+            do
+              nc -z localhost 5432 && echo Success && exit 0
+              echo -n .
+              sleep 1
+            done
+            echo Failed waiting for Postgres && exit 1
+      - run:
+          name: rake test
+          command: |
+            bundle exec rake dbcreate test
+          environment:
+            DATABASE_URL: postgresql://postgres@127.0.0.1:5432/lrus_test
 workflows:
   version: 2
   default:

@@ -1,5 +1,7 @@
 ENV['RACK_ENV'] ||= 'test'
-ENV['MONGOLAB_URI'] = 'mongodb://127.0.0.1:27017/lrus-test'
+ENV["DATABASE_URL"] ||= 'postgresql://postgres@127.0.0.1:5432/lrus_test'
+require 'pry-byebug'
+require 'rack/test'
 require 'minitest/autorun'
 require_relative '../app'
 
@@ -7,7 +9,10 @@ describe App do
   include Rack::Test::Methods
 
   after do
-    MONGO.collections.each(&:drop)
+    PG::Connection.new(ENV["DATABASE_URL"]).tap do |connection|
+      response = connection.exec_params "DELETE FROM apps"
+      connection.finish
+    end
   end
 
   def app
@@ -41,12 +46,22 @@ describe App do
 
     it 'evict' do
       post '/foo', branch: 'foo' # => foo1
+      assert last_response.body == 'foo1'
+
       post '/foo', branch: 'bar' # => foo2
+      assert last_response.body == 'foo2'
+
       post '/foo', branch: 'baz' # => foo3
+      assert last_response.body == 'foo3'
+
       post '/foo', branch: 'qux' # => foo1
       assert last_response.body == 'foo1'
+
       post '/foo', branch: 'foo' # => foo2
       assert last_response.body == 'foo2'
+
+      post '/foo', branch: 'bar' # => foo3
+      assert last_response.body == 'foo3'
     end
 
     it 'template' do
@@ -227,6 +242,35 @@ describe App do
         assert last_response.status == 200
         assert last_response.body == 'Not accepted event: pull_request_review'
       end
+    end
+  end
+
+  describe 'GET /:name/:branch' do
+    before do
+      post '/foo', branch: 'bar'
+      post '/foo/1/lock'
+      post '/foo', branch: 'baz'
+    end
+
+    it 'works' do
+      get '/foo/bar'
+      assert last_response.status == 200
+      assert last_response.content_type == 'application/json'
+      response_json = JSON.parse last_response.body
+      assert response_json['b'] == 'bar'
+      assert response_json['l'] == true
+
+      get '/foo/baz'
+      assert last_response.status == 200
+      assert last_response.content_type == 'application/json'
+      response_json = JSON.parse last_response.body
+      assert response_json['b'] == 'baz'
+      assert response_json['l'] == false
+
+      get '/foo/qux'
+      assert last_response.status == 404
+      get '/qux/foo'
+      assert last_response.status == 404
     end
   end
 end
