@@ -69,7 +69,7 @@ class Apps
         available_servers = servers.reject { _1[:l] }
         raise LockedError if available_servers.empty?
 
-        server = available_servers.find { _1[:b].empty? } || available_servers.min_by { _1[:t] }
+        server = available_servers.find { _1[:b].nil? || _1[:b].empty? } || available_servers.min_by { _1[:t] }
       end
 
       server[:b] = branch
@@ -100,7 +100,7 @@ class Apps
   # @return [void]
   def free(name:, number:)
     find_and_lock(name: name, number: number) do |server|
-      server[:b].clear
+      server[:b] = ''
       server[:t] = Time.now
       server[:l] = false
     end
