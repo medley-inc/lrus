@@ -143,7 +143,7 @@ class App < Sinatra::Base
 
     payload = JSON.parse(body)
     ref_type = payload['ref_type']
-    return "Not accepted action: #{action}" unless action == 'branch'
+    return "Not accepted ref_type: #{ref_type}" unless ref_type == 'branch'
 
     name = params[:name]
     branch = payload['ref']
