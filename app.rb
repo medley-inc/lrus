@@ -131,4 +131,33 @@ class App < Sinatra::Base
       "Not exist repository: #{branch}"
     end
   end
+
+  # github webhook
+  post '/webhook/branch/unlock/:name' do
+    github_event = request.env['HTTP_X_GITHUB_EVENT']
+    # see: https://docs.github.com/ja/webhooks-and-events/webhooks/webhook-events-and-payloads#delete
+    return "Not accepted event: #{github_event}" unless github_event == 'delete'
+
+    body = request.body.read
+    return "No body" if body == ''
+
+    payload = JSON.parse(body)
+    ref_type = payload['ref_type']
+    return "Not accepted action: #{action}" unless action == 'branch'
+
+    name = params[:name]
+    branch = payload['ref']
+
+    begin
+      settings.database_connection_pool.with do |connection|
+        apps = Apps.new(connection: connection)
+        apps.unlock(name: name, branch: branch)
+      end
+      'ok'
+    rescue Apps::AppNotFoundError
+      "Not exist application: #{name}"
+    rescue Apps::ServerNotFoundError
+      "Not exist repository: #{branch}"
+    end
+  end
 end
