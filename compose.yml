@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  postgresql:
+    image: postgres:10.18
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgresql-db:/data/db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: lrus_test
+volumes:
+  postgresql-db:
