@@ -1,5 +1,5 @@
 source 'https://rubygems.org'
-ruby '2.7.6'
+ruby File.read(File.join(File.dirname(__FILE__), '.ruby-version')).strip
 
 gem 'pg'
 gem 'puma'
