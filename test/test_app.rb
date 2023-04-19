@@ -122,14 +122,14 @@ describe App do
       assert last_response.body == 'foo4'
     end
 
-    # it 'shrink' do
-    #   post '/foo', branch: 'foo', size: 3 # => foo1
-    #   post '/foo', branch: 'bar', size: 3 # => foo2
-    #   post '/foo', branch: 'baz', size: 3 # => foo3
-    #   assert last_response.body == 'foo3'
-    #   post '/foo', branch: 'baz', size: 2 # => foo1
-    #   assert last_response.body == 'foo1'
-    # end
+    it 'shrink' do
+      post '/foo', branch: 'foo', size: 3 # => foo1
+      post '/foo', branch: 'bar', size: 3 # => foo2
+      post '/foo', branch: 'baz', size: 3 # => foo3
+      assert last_response.body == 'foo3'
+      post '/foo', branch: 'baz', size: 2 # => foo1
+      assert last_response.body == 'foo1'
+    end
 
     it 'empty' do
       post '/foo', branch: 'foo' # => foo1

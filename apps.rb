@@ -61,7 +61,7 @@ class Apps
         servers = parse_servers result[0]['servers']
       end
       servers.push(Server.new(servers.size + 1, now, '', false)) while servers.size < size
-      # servers.pop while servers.size > size
+      servers.pop while servers.size > size
 
       server = find_server servers, branch: branch, number: number
 
